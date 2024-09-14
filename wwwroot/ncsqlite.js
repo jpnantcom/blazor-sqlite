@@ -56,7 +56,14 @@
         }
     }
 
-    await instance.sqlite('open', { filename: dbFileName });
+    try
+    {
+        await instance.sqlite('open', { filename: dbFileName });
+    }
+    catch (ex)
+    {
+        dotnetRef.invokeMethodAsync("OnError", ex.result.message, ex.result);
+    }
 
     return instance;
 }

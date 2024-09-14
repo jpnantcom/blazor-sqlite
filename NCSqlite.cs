@@ -79,7 +79,7 @@ public class NCSqlite : IAsyncDisposable
     /// <param name="reader"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public async Task Execute( string sql, Action<JObject> reader )
+    public async Task Execute( string sql, Action<JObject>? reader = null )
     {
         _errorDetail = null;
 
@@ -239,9 +239,16 @@ public class NCSqlite : IAsyncDisposable
     {
         if (_ncsqliteJs == null)
         {
+            _errorDetail = null;
+
             _jsModule = await _js.InvokeAsync<IJSObjectReference>(
                         "import", "./_content/NC.BlazorSQLite/ncsqlite.js");
             _ncsqliteJs = await _jsModule.InvokeAsync<IJSObjectReference>("getInstance", _ref, this.DbFileName);
+
+            if (_errorDetail != null)
+            {
+                throw new NCSqliteException(_errorDetail);
+            }
         }
 
         return _ncsqliteJs;
@@ -267,11 +274,11 @@ public class NCSqlite : IAsyncDisposable
         switch (value.Type)
         {
             case JTokenType.String:
+            case JTokenType.Date:
                 return $"'{value}'";
             case JTokenType.Integer:
             case JTokenType.Float:
             case JTokenType.Boolean:
-            case JTokenType.Date:
                 return value.ToString();
             default:
                 return $"'{value.ToString(Formatting.None).Replace("'", "''")}'";
@@ -298,7 +305,7 @@ public class NCSqlite : IAsyncDisposable
                 sqlLiteType = "INTEGER";
                 break;
             case JTokenType.Date:
-                sqlLiteType = "INTEGER";
+                sqlLiteType = "TEXT";
                 break;
             default:
                 columnName = $"{columnName}_json";
