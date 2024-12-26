@@ -79,7 +79,7 @@ public class NCSqlite : IAsyncDisposable
     /// <param name="reader"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public async Task Execute( string sql, Action<JObject>? reader = null )
+    public async Task Execute(string sql, Action<JObject>? reader = null, object bind = null)
     {
         _errorDetail = null;
 
@@ -92,7 +92,7 @@ public class NCSqlite : IAsyncDisposable
 
         var ncSqlite = await GetNcSqliteInstance();
 
-        await ncSqlite.InvokeVoidAsync("exec", sql);
+        await ncSqlite.InvokeVoidAsync("exec", sql, bind);
 
         _currentRowHandler = null;
 
@@ -140,7 +140,7 @@ public class NCSqlite : IAsyncDisposable
     /// <typeparam name="T"></typeparam>
     /// <param name="data"></param>
     /// <returns></returns>
-    public Task Upsert<T>( T data)
+    public Task Upsert<T>(T data)
     {
         if (data == null)
         {
@@ -213,7 +213,7 @@ public class NCSqlite : IAsyncDisposable
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="ArgumentNullException"></exception>
-    public async Task Delete( string tableName, string keyPropertyName, JToken keyValue)
+    public async Task Delete(string tableName, string keyPropertyName, JToken keyValue)
     {
         if (string.IsNullOrEmpty(tableName))
         {
@@ -256,12 +256,12 @@ public class NCSqlite : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if ( _jsModule != null )
+        if (_jsModule != null)
         {
             await _jsModule.DisposeAsync();
         }
 
-        if (_ncsqliteJs != null )
+        if (_ncsqliteJs != null)
         {
             await _ncsqliteJs.DisposeAsync();
         }

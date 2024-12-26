@@ -34,15 +34,21 @@
 
     instance.sqlite = await promiserFactory(instance.promiserConfig);
 
-    instance.exec = async function (sql)
+    instance.exec = async function (sql, bind)
     {
         let columnNames = [];
 
         try
         {
+            const modifiedBind = {};
+            for (const key in bind) {
+                modifiedBind['$' + key] = bind[key];
+            }
+
             await instance.sqlite('exec', {
                 sql,
                 columnNames,
+                bind: modifiedBind,
                 callback: function (item)
                 {
                     instance.dotnetRef.invokeMethodAsync("OnRow", item);
