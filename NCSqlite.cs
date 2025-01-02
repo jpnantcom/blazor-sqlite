@@ -179,7 +179,7 @@ public class NCSqlite : IAsyncDisposable
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.Append($"INSERT INTO {tableName} (");
+        sb.Append($"INSERT OR REPLACE INTO {tableName} (");
 
         var properties = data.Properties();
         foreach (var property in properties)
@@ -315,4 +315,26 @@ public class NCSqlite : IAsyncDisposable
         return (columnName, sqlLiteType);
     }
 
+    /// <summary>
+    /// Runs the given action in a transaction
+    /// </summary>
+    /// <param name="toRun"></param>
+    /// <returns></returns>
+    public async Task Transaction(Action toRun)
+    {
+        await Execute("BEGIN TRANSACTION;", null);
+
+        try
+        {
+            toRun();
+        }
+        catch (Exception)
+        {
+            await Execute("ROLLBACK;", null);
+
+            throw;
+        }
+
+        await Execute("END TRANSACTION;", null);
+    }
 }
