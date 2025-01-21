@@ -184,7 +184,13 @@ public class NCSqlite : IAsyncDisposable
         var properties = data.Properties();
         foreach (var property in properties)
         {
-            var (columnName, _) = GetColumnNameAndType(property);
+            var (columnName, _) = GetColumnNameAndType(property, skipNull: true);
+
+            if (string.IsNullOrEmpty(columnName))
+            {
+                continue;
+            }
+
             sb.Append($"{columnName}, ");
         }
         sb.Remove(sb.Length - 2, 2); // Remove the last comma and space
@@ -193,6 +199,11 @@ public class NCSqlite : IAsyncDisposable
         foreach (var property in properties)
         {
             JToken columnValue = property.Value;
+
+            if (columnValue.Type == JTokenType.Null)
+            {
+                continue;
+            }
 
             sb.Append($"{GetSqlValue(columnValue)}, ");
         }
@@ -242,7 +253,7 @@ public class NCSqlite : IAsyncDisposable
             _errorDetail = null;
 
             _jsModule = await _js.InvokeAsync<IJSObjectReference>(
-                        "import", "./_content/NC.BlazorSQLite/ncsqlite.js");
+                        "import", "/_content/NC.BlazorSQLite/ncsqlite.js");
             _ncsqliteJs = await _jsModule.InvokeAsync<IJSObjectReference>("getInstance", _ref, this.DbFileName);
 
             if (_errorDetail != null)
@@ -285,8 +296,18 @@ public class NCSqlite : IAsyncDisposable
         }
     }
 
-    private (string columnName, string sqlLiteType) GetColumnNameAndType(JProperty property)
+    private (string columnName, string sqlLiteType) GetColumnNameAndType(JProperty property, bool skipNull = false)
     {
+        if (property.Value.Type == JTokenType.Null)
+        {
+            if (skipNull)
+            {
+                return (string.Empty, string.Empty);
+            }
+
+            throw new InvalidOperationException("Column value cannot be null");
+        }
+
         string columnName = property.Name;
         string sqlLiteType = "TEXT";
 
@@ -320,13 +341,13 @@ public class NCSqlite : IAsyncDisposable
     /// </summary>
     /// <param name="toRun"></param>
     /// <returns></returns>
-    public async Task Transaction(Action toRun)
+    public async Task Transaction(Func<Task> toRun)
     {
         await Execute("BEGIN TRANSACTION;", null);
 
         try
         {
-            toRun();
+            await toRun();
         }
         catch (Exception)
         {
