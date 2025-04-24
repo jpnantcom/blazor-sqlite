@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NC.BlazorSQLite;
@@ -19,8 +20,9 @@ public class NCSqlite : IAsyncDisposable
 
     private Action<JObject>? _currentRowHandler;
     private NcSqliteErrorDetail? _errorDetail;
+    private string _latestSql = string.Empty;   
 
-    private HashSet<string> _createdTables = new();
+	private HashSet<string> _createdTables = new();
 
     public string DbFileName { get; private set; }
 
@@ -35,7 +37,7 @@ public class NCSqlite : IAsyncDisposable
     [JSInvokable]
     public async Task OnError(string message, JsonElement data)
     {
-        _errorDetail = new NcSqliteErrorDetail(message, data);
+        _errorDetail = new NcSqliteErrorDetail($"Latest Query was: {_latestSql}\r\n\r\n{message}", data);
     }
 
     [JSInvokable]
@@ -82,6 +84,7 @@ public class NCSqlite : IAsyncDisposable
     public async Task Execute(string sql, Action<JObject>? reader = null, object bind = null)
     {
         _errorDetail = null;
+        _latestSql = sql;
 
         if (_currentRowHandler != null)
         {
@@ -280,21 +283,38 @@ public class NCSqlite : IAsyncDisposable
         _ref?.Dispose();
     }
 
+    public static string EscapeSqlString(string value)
+    {
+	    if (string.IsNullOrEmpty(value))
+		    return value;
+
+	    // Escape single quotes by doubling them
+	    value = value.Replace("'", "''");
+
+	    // Escape backslashes (important for some databases)
+	    value = value.Replace("\\", "\\\\");
+
+	    // Escape newlines
+	    value = value.Replace("\n", "\\n").Replace("\r", "\\r");
+
+	    return value;
+    }
+
     private string GetSqlValue(JToken value)
     {
         switch (value.Type)
         {
-            case JTokenType.String:
-            case JTokenType.Date:
-                return $"'{value}'";
             case JTokenType.Integer:
             case JTokenType.Float:
             case JTokenType.Boolean:
                 return value.ToString();
-            default:
-                return $"'{value.ToString(Formatting.None).Replace("'", "''")}'";
-        }
+			case JTokenType.String:
+			case JTokenType.Date:
+			default:
+				return $"'{EscapeSqlString(value.ToString())}'";
+		}
     }
+
 
     private (string columnName, string sqlLiteType) GetColumnNameAndType(JProperty property, bool skipNull = false)
     {
