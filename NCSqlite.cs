@@ -127,7 +127,7 @@ public class NCSqlite : IAsyncDisposable
         foreach (var property in properties)
         {
             var (columnName, sqlLiteType) = GetColumnNameAndType(property);
-            sb.Append($"{columnName} {sqlLiteType}, ");
+            sb.Append($"[{columnName}] {sqlLiteType}, ");
         }
         sb.Remove(sb.Length - 2, 2); // Remove the last comma and space
         sb.Append(")");
@@ -194,7 +194,7 @@ public class NCSqlite : IAsyncDisposable
                 continue;
             }
 
-            sb.Append($"{columnName}, ");
+            sb.Append($"[{columnName}], ");
         }
         sb.Remove(sb.Length - 2, 2); // Remove the last comma and space
         sb.Append(") VALUES (");
