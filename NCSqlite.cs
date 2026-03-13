@@ -1,13 +1,7 @@
 ﻿using Microsoft.JSInterop;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace NC.BlazorSQLite;
 
@@ -20,9 +14,9 @@ public class NCSqlite : IAsyncDisposable
 
     private Action<JObject>? _currentRowHandler;
     private NcSqliteErrorDetail? _errorDetail;
-    private string _latestSql = string.Empty;   
+    private string _latestSql = string.Empty;
 
-	private HashSet<string> _createdTables = new();
+    private HashSet<string> _createdTables = new();
 
     public string DbFileName { get; private set; }
 
@@ -285,19 +279,19 @@ public class NCSqlite : IAsyncDisposable
 
     public static string EscapeSqlString(string value)
     {
-	    if (string.IsNullOrEmpty(value))
-		    return value;
+        if (string.IsNullOrEmpty(value))
+            return value;
 
-	    // Escape single quotes by doubling them
-	    value = value.Replace("'", "''");
+        // Escape single quotes by doubling them
+        value = value.Replace("'", "''");
 
-	    // Escape backslashes (important for some databases)
-	    value = value.Replace("\\", "\\\\");
+        // Escape backslashes (important for some databases)
+        value = value.Replace("\\", "\\\\");
 
-	    // Escape newlines
-	    value = value.Replace("\n", "\\n").Replace("\r", "\\r");
+        // Escape newlines
+        value = value.Replace("\n", "\\n").Replace("\r", "\\r");
 
-	    return value;
+        return value;
     }
 
     private string GetSqlValue(JToken value)
@@ -308,11 +302,11 @@ public class NCSqlite : IAsyncDisposable
             case JTokenType.Float:
             case JTokenType.Boolean:
                 return value.ToString();
-			case JTokenType.String:
-			case JTokenType.Date:
-			default:
-				return $"'{EscapeSqlString(value.ToString())}'";
-		}
+            case JTokenType.String:
+            case JTokenType.Date:
+            default:
+                return $"'{EscapeSqlString(value.ToString())}'";
+        }
     }
 
 
